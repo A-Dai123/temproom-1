@@ -5,13 +5,15 @@
 file: main.py
 """
 from PyQt5.QtWidgets import (QApplication, QComboBox, QDialog,
-        QDialogButtonBox, QFormLayout, QGridLayout, QGroupBox, QHBoxLayout,
-        QLabel, QLineEdit, QMenu, QMenuBar, QPushButton,QVBoxLayout, QDesktopWidget,QMessageBox)
+        QCheckBox, QGridLayout, QGroupBox, QHBoxLayout,
+        QLabel, QMenu, QMenuBar, QPushButton,QVBoxLayout, QDesktopWidget,QMessageBox)
 from PyQt5 import QtCore,QtGui
 import sys,time
 import send,record,play,threading
 import DataBaseRelated
 import qdarkstyle
+from Visualization import Visualization
+
 
 class Dialog(QDialog):
     number=0
@@ -21,7 +23,7 @@ class Dialog(QDialog):
     username=''
     closesignal=0
     font = QtGui.QFont("Arial", 12, QtGui.QFont.Bold)
-
+    flag=0;
     def __init__(self,username,roomnumber):
         super(Dialog, self).__init__()
         self.setWindowIcon(QtGui.QIcon('1.png'))
@@ -31,16 +33,28 @@ class Dialog(QDialog):
         self.l4 = QLabel(str(roomnumber))
         self.b1 = QPushButton('连接服务器')
         self.b2 = QPushButton('下线')
+        self.cb1 = QCheckBox("童声")
+        self.cb2 = QCheckBox("男声")
+        self.cb3 = QCheckBox("降噪")
+        self.t1 = QPushButton("麦克风测试")
+        #self.cb1= QCheckBox("HHH")
 
         self.setFont(self.font)
         self.l1.setFont(self.font)
         self.l2.setFont(self.font)
         self.b1.setFont(self.font)
         self.b2.setFont(self.font)
-
+        self.cb1.setFont(self.font)
+        self.cb2.setFont(self.font)
+        self.cb3.setFont(self.font)
+        self.t1.setFont(self.font)
 
         self.b1.clicked.connect(self.connect)
         self.b2.clicked.connect(self.close)
+        self.t1.clicked.connect(self.test)
+        self.cb1.stateChanged.connect(self.changecb1)
+        self.cb2.stateChanged.connect(self.changecb2)
+        self.cb3.stateChanged.connect(self.changecb3)
         self.username=username
         self.roomnumber=roomnumber
         # 调整显示内容
@@ -66,21 +80,9 @@ class Dialog(QDialog):
         layout.addStretch()
         self.formGroupBox.setLayout(layout)
 
+        v_box = QVBoxLayout()  # 垂直布局
 
-
-
-        #
-        # self.createFormGroupBox()
-
-        v_box = QVBoxLayout()
-
-
-        layout = QGridLayout()
-        # layout.addWidget(self.l1,0,0)
-        # layout.addWidget(self.l3,0,1)
-        # layout.addWidget(self.l2,1,0)
-        # layout.addWidget(self.l4,1,1)
-
+        layout = QGridLayout()  # 总体表格布局
 
         h_box1 = QHBoxLayout()
         h_box2 = QHBoxLayout()
@@ -94,11 +96,15 @@ class Dialog(QDialog):
         v_box.addLayout(h_box2)
 
         layout.addLayout(v_box,0,0,1,1)
-        # self.formGroupBox = QGroupBox("房间内用户")
-        layout.addWidget(self.formGroupBox,2,0,5,2)
+        layout.addWidget(self.formGroupBox,2,0,5,3)
         layout.addWidget(self.b1,7,0,1,1)
         layout.addWidget(self.b2,7,1,1,1)
-        # layout.addWidget(self.user,2,0,0,2)
+        layout.addWidget(self.t1,7,2,1,1)
+        layout.addWidget(self.cb1,8,0,1,1)
+        layout.addWidget(self.cb2,8,1,1,1)
+        layout.addWidget(self.cb3,8,2,1,1)
+        #layout.addWidget(self.cb1, 8, 0, 1, 1)
+
 
         self.setLayout(layout)
         self.setWindowTitle('Temproom')
@@ -106,8 +112,6 @@ class Dialog(QDialog):
         self.resize(250,600)
         self.center()
 
-        # self.b1.clicked.connect(self.btn1_clk)
-        # self.b2.clicked.connect(self.btn2_clk)
         try:
             self.t=threading.Thread(target=self.refresh)
             self.t.start()
@@ -123,20 +127,46 @@ class Dialog(QDialog):
 
 
             if a.exec() == 1024:
-                # cur, conn = DataBaseRelated.ini()
-                # DataBaseRelated.useroffline(self.username, self.roomnumber, cur, conn)
-                # DataBaseRelated.roomoffline(self.roomnumber, cur, conn)
-                # conn.close()
+
+                self.close()
+    def changecb1(self):
+        self.flag=1
+        if self.cb2.isChecked():
+            self.cb2.setCheckState(Qt.Unchecked)
+
+    def changecb2(self):
+        self.flag=2
+        if self.cb1.isChecked():
+            self.cb1.setCheckState(Qt.Unchecked)
+           #self.cb1.setChecked(false)
+
+
+    def changecb3(self):
+        self.flag=3
+
+    def test(self):
+        v = Visualization()
+
+    def connect(self):
+        try:
+            so =send.client_connect()
+
+            t = threading.Thread(target=self.flow, args=[so])
+            t.start()
+
+        except:
+            a = QMessageBox(self)
+            a.setFont(self.font)
+            a.setText("程序异常，请退出")
+            a.setWindowModality(QtCore.Qt.WindowModal)
+
+            a.setIcon(QMessageBox.NoIcon)
+            a.setDefaultButton(QMessageBox.Yes)
+
+            if a.exec() == 1024:
                 self.close()
 
 
-
-
-    def connect(self):
-        pass
-        # so =send.client_connect()
-        # t = threading.Thread(target=self.flow,args=so)
-        # t.start()
 
     def closeEvent(self, event):
         a = QMessageBox(self)
@@ -181,6 +211,8 @@ class Dialog(QDialog):
     def refresh(self):
 
         while 1:
+            if self.closesignal == 1:
+                break
             time.sleep(1)
             #print(self.number)
 
@@ -192,6 +224,10 @@ class Dialog(QDialog):
                 self.number = DataBaseRelated.curretroomusernumber(self.roomnumber, cur)
                 del self.userlist[:]
                 # del self.user[:]
+
+                if self.closesignal == 1:
+                    break
+
                 result = DataBaseRelated.curretroomusers(self.roomnumber, cur)
                 conn2.close()
                 for i in range(10):
@@ -201,47 +237,9 @@ class Dialog(QDialog):
                 for i in range(self.number):
                     self.userlist.append(result[i][2])
                     self.user[i].setText(str(self.userlist[i]))
-                self.update()
-                #     self.use = QLabel(str(self.userlist[i]))
-                #     self.user.append(self.use)
-                # layout = QVBoxLayout()
-                # for i in range(self.number):
-                #     layout.addWidget(self.user[i])
-                # layout.addStretch()
-                #
-                # self.formGroupBox.setLayout(layout)
-                # self.formGroupBox.update()
-                #
-                # v_box = QVBoxLayout()
-                #
-                # layout = QGridLayout()
-                #
-                # h_box1 = QHBoxLayout()
-                # h_box2 = QHBoxLayout()
-                #
-                # h_box1.addWidget(self.l1)
-                # h_box1.addWidget(self.l3)
-                # v_box.addLayout(h_box1)
-                #
-                # h_box2.addWidget(self.l2)
-                # h_box2.addWidget(self.l4)
-                # v_box.addLayout(h_box2)
-                #
-                # layout.addLayout(v_box, 0, 0, 1, 1)
-                # layout.addWidget(self.formGroupBox, 2, 0, 5, 2)
-                # layout.addWidget(self.b1, 7, 0, 1, 1)
-                # layout.addWidget(self.b2, 7, 1, 1, 1)
-                # self.setLayout(layout)
-                # self.update()
-                # self.hide()
 
-                # try:
-                #     t=threading.Thread(target=new,args=(self.username, self.roomnumber))
-                #     t.start()
-                # except:
-                #     break
-                #
-                # break
+                self.update()
+
             conn.close()
             if self.closesignal == 1:
                 break
@@ -254,20 +252,6 @@ class Dialog(QDialog):
         qr.moveCenter(cp)
         self.move(qr.topLeft())
 
-    # def b2_click(self):
-    #     cur, conn = DataBaseRelated.ini()
-    #     DataBaseRelated.useroffline(self.username, self.roomnumber, cur, conn)
-    #     DataBaseRelated.roomoffline(self.roomnumber, cur, conn)
-    #     conn.close()
-    # def btn1_clk(self):
-    #         pass
-    #
-    # def btn2_clk(self):
-    #         pass
-
-
-    #
-    # def createFormGroupBox(self,):
 
     def flow(self,s):
         while 1:
@@ -276,12 +260,12 @@ class Dialog(QDialog):
             for i in self.userlist:
                 if self.username != i:
                     send.recv(s)
-                    t = threading.Thread(target=play.play,args=i)
+                    t = threading.Thread(target=play.play,args=[i])
                     t.start()
+            if self.closesignal==1:
+                s.closesocket()
+                break
 
-# def new(username,roomnumber):
-#     new_window = Dialog(username, roomnumber)
-#     new_window.show()
 
 
 if __name__ == '__main__':
