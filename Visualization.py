@@ -32,15 +32,17 @@ class Visualization(object):
         plot = win.addPlot(axisItems={'bottom': stringaxis}, title='麦克风测试波形')
         label = pg.TextItem()
         plot.addItem(label)
-        plot.addLegend(size=(150, 80))
+        # plot.addLegend(size=(150, 80))
         plot.showGrid(x=True, y=True, alpha=0.5)
-
-        while(1):
+        plot.setLabel(axis='left')
+        plot.setLabel(axis='bottom', text='time (seconds)')
+        
+        while(win):
             CHUNK = 1024
             FORMAT = pyaudio.paInt16
             CHANNELS = 2
             RATE = 44100
-            RECORD_SECONDS = 1
+            RECORD_SECONDS = 0.2
             
             p = pyaudio.PyAudio()
             
@@ -73,10 +75,10 @@ class Visualization(object):
             #http://blog.51cto.com/6230973/2052761
             # app = pg.QtGui.QApplication([]) #首先实例化一个QT实例
             #stringaxis.setTicks([time, wave_date[1]])
-            plot.plot(x=time, y=wave_data[0], pen='r', name='左声道', symbolBrush=(255, 0, 0), )
-            plot.plot(x=time, y=wave_data[1], pen='g', name='右声道', symbolBrush=(0, 255, 0))
-            plot.setLabel(axis='left')
-            plot.setLabel(axis='bottom', text='time (seconds)')
+            plot.clear()
+            # plot.plotItem.legend.items = []
+            plot.plot(x=time[::10], y=wave_data[0][::10], pen='r', size=0.01)#, symbolBrush=(255, 0, 0))
+            plot.plot(x=time[::10], y=wave_data[1][::10], pen='g', size=0.01)#, symbolBrush=(0, 255, 0))
             pg.QtGui.QApplication.processEvents()
 
             #可视化
