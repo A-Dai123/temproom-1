@@ -12,7 +12,7 @@ from matplotlib.ticker import  MultipleLocator
 from matplotlib.ticker import  FormatStrFormatter
 #from pyqt5 import QtGui,QtCore
 import pyqtgraph as pg
-import tushare as ts
+# import tushare as ts
 #import numpy as np
 #import PIL
 #import tkinter
@@ -27,12 +27,20 @@ class Visualization(object):
         ymajorLocator = MultipleLocator(1000)
         ymajorFormatter = FormatStrFormatter('%1.1f')
 
+        win = pg.GraphicsWindow(title='麦克风测试')
+        stringaxis = pg.AxisItem(orientation='bottom')
+        plot = win.addPlot(axisItems={'bottom': stringaxis}, title='麦克风测试波形')
+        label = pg.TextItem()
+        plot.addItem(label)
+        plot.addLegend(size=(150, 80))
+        plot.showGrid(x=True, y=True, alpha=0.5)
+
         while(1):
             CHUNK = 1024
             FORMAT = pyaudio.paInt16
             CHANNELS = 2
             RATE = 44100
-            RECORD_SECONDS = 0.1
+            RECORD_SECONDS = 1
             
             p = pyaudio.PyAudio()
             
@@ -63,20 +71,13 @@ class Visualization(object):
             time = np.arange(0, len(wave_data[0])) * (1.0 / RATE)
 
             #http://blog.51cto.com/6230973/2052761
-            app = pg.QtGui.QApplication([]) #首先实例化一个QT实例
-            win = pg.GraphicsWindow(title='麦克风测试')
-            stringaxis = pg.AxisItem(orientation='bottom')
+            # app = pg.QtGui.QApplication([]) #首先实例化一个QT实例
             #stringaxis.setTicks([time, wave_date[1]])
-            plot = win.addPlot(axisItems={'bottom': stringaxis}, title='麦克风测试波形')
-            label = pg.TextItem()
-            plot.addItem(label)
-            plot.addLegend(size=(150, 80))
-            plot.showGrid(x=True, y=True, alpha=0.5)
             plot.plot(x=time, y=wave_data[0], pen='r', name='左声道', symbolBrush=(255, 0, 0), )
             plot.plot(x=time, y=wave_data[1], pen='g', name='右声道', symbolBrush=(0, 255, 0))
             plot.setLabel(axis='left')
             plot.setLabel(axis='bottom', text='time (seconds)')
-
+            pg.QtGui.QApplication.processEvents()
 
             #可视化
             #左声道设置
@@ -109,4 +110,4 @@ class Visualization(object):
             # label_img.pack()
 
 
-        p.get_device_count()
+        # p.get_device_count()
